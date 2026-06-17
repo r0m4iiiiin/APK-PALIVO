@@ -3,8 +3,8 @@ name: Auto Scrape Palivo
 # Déclencheurs du script
 on:
   schedule:
-    # S'exécute automatiquement tous les lundis à 6h00 UTC
-    - cron: '0 6 * * 1'
+    # S'exécute automatiquement toutes les 48 heures (tous les 2 jours) à 6h00 UTC
+    - cron: '0 6 */2 * *'
   workflow_dispatch: # Te permet de lancer le script manuellement en 1 clic depuis l'interface GitHub
 
 jobs:
@@ -22,22 +22,24 @@ jobs:
       with:
         python-version: '3.10'
 
-    # 3. Installe la bibliothèque pandas
+    # 3. Installe les bibliothèques requises (Pandas + Firebase)
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install pandas firebase-admin
 
-    # 4. Exécute ton script Python
+    # 4. Exécute le script Python en lui transmettant la clé secrète Firebase
     - name: Run script
+      env:
+        FIREBASE_KEY: ${{ secrets.FIREBASE_KEY }}
       run: |
         python scrape_palivo.py "Feuille de calcul sans titre - Feuille 1.csv" "resultats_complets.csv"
 
-    # 5. Enregistre le fichier généré et le renvoie sur ton dépôt GitHub
+    # 5. Enregistre le fichier CSV généré et le renvoie sur ton dépôt GitHub (sauvegarde de sécurité)
     - name: Commit and push changes
       run: |
         git config --global user.name "GitHub Action"
         git config --global user.email "actions@github.com"
         git add resultats_complets.csv
-        git commit -m "Mise à jour automatique des prix du carburant" || exit 0
+        git commit -m "Mise à jour automatique des prix et synchronisation Firebase" || exit 0
         git push
